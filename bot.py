@@ -4,45 +4,35 @@ import schedule
 import telebot
 import threading
 import time
-from telebot import types
 
-
-# ==================================================
+# ==============================
 # إعدادات البوت
-# ==================================================
+# ==============================
 
-BOT_TOKEN = "8835971524:AAFx5vV1tUeT1skCFCLtBcf-SjG3TL9dDBc"
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 
-# Chat ID الخاص بالمدير
 ADMIN_ID = 495109765
 
-# بداية أول حصة
 BASE_START_DATE = datetime.date(2026, 9, 22)
-
-# مدة الحصة بالأيام
 CYCLE_DAYS = 5
 
-# ملف المستخدمين
 USERS_FILE = "users.txt"
 
+COPYRIGHT = "\n\n_© By Tariq Nabeel_"
 
-# ==================================================
+# ==============================
 # تشغيل البوت
-# ==================================================
+# ==============================
+
+if not BOT_TOKEN:
+    raise ValueError("❌ BOT_TOKEN غير موجود في Environment Variables")
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
 
-# ==================================================
-# الحقوق
-# ==================================================
-
-COPYRIGHT = "\n\n_© By Tariq Nabeel_"
-
-
-# ==================================================
-# قراءة المستخدمين
-# ==================================================
+# ==============================
+# المستخدمين
+# ==============================
 
 def load_users():
 
@@ -53,11 +43,7 @@ def load_users():
 
     try:
 
-        with open(
-            USERS_FILE,
-            "r",
-            encoding="utf-8"
-        ) as f:
+        with open(USERS_FILE, "r", encoding="utf-8") as f:
 
             for line in f:
 
@@ -70,17 +56,9 @@ def load_users():
 
                 user_id = parts[0]
 
-                username = (
-                    parts[1]
-                    if len(parts) > 1
-                    else "N/A"
-                )
+                username = parts[1] if len(parts) > 1 else "N/A"
 
-                name = (
-                    parts[2]
-                    if len(parts) > 2
-                    else "N/A"
-                )
+                name = parts[2] if len(parts) > 2 else "N/A"
 
                 users[user_id] = {
                     "username": username,
@@ -89,17 +67,10 @@ def load_users():
 
     except Exception as e:
 
-        print(
-            "Error reading users:",
-            e
-        )
+        print("Error reading users:", e)
 
     return users
 
-
-# ==================================================
-# حفظ المستخدم
-# ==================================================
 
 def save_user(message):
 
@@ -110,41 +81,73 @@ def save_user(message):
     if user_id in users:
         return
 
-    username = (
-        message.from_user.username
-        or "N/A"
-    )
+    username = message.from_user.username or "N/A"
 
     full_name = (
-        message.from_user.first_name
-        or "N/A"
+        message.from_user.first_name or "N/A"
     )
+
+    try:
+
+        with open(USERS_FILE, "a", encoding="utf-8") as f:
+
+            f.write(
+                f"{user_id}|{username}|{full_name}\n"
+            )
+
+    except Exception as e:
+
+        print("Error saving user:", e)
+
+
+def delete_user(user_id):
+
+    users = load_users()
+
+    user_id = str(user_id)
+
+    if user_id not in users:
+        return False
+
+    del users[user_id]
 
     try:
 
         with open(
             USERS_FILE,
-            "a",
+            "w",
             encoding="utf-8"
         ) as f:
 
-            f.write(
-                f"{user_id}|"
-                f"{username}|"
-                f"{full_name}\n"
-            )
+            for uid, data in users.items():
+
+                f.write(
+                    f"{uid}|"
+                    f"{data['username']}|"
+                    f"{data['name']}\n"
+                )
+
+        return True
 
     except Exception as e:
 
-        print(
-            "Error saving user:",
-            e
-        )
+        print("Delete error:", e)
+
+        return False
 
 
-# ==================================================
-# حساب الحصة الحالية
-# ==================================================
+# ==============================
+# التحقق من الأدمن
+# ==============================
+
+def is_admin(message):
+
+    return message.chat.id == ADMIN_ID
+
+
+# ==============================
+# نظام حصة البنزين
+# ==============================
 
 def get_current_batch():
 
@@ -181,10 +184,6 @@ def get_current_batch():
     return start, end
 
 
-# ==================================================
-# حالة الحصة
-# ==================================================
-
 def get_gas_status():
 
     today = datetime.date.today()
@@ -197,10 +196,13 @@ def get_gas_status():
 
     message = (
         "⛽ *حصة البنزين - كركوك*\n\n"
+
         f"📅 اليوم:\n"
         f"*{today.strftime('%Y-%m-%d')}*\n\n"
+
         f"🟢 بداية الحصة:\n"
         f"*{start.strftime('%Y-%m-%d')}*\n\n"
+
         f"🏁 نهاية الحصة:\n"
         f"*{end.strftime('%Y-%m-%d')}*\n\n"
     )
@@ -230,35 +232,27 @@ def get_gas_status():
     return message
 
 
-# ==================================================
+# ==============================
 # /start
-# ==================================================
+# ==============================
 
 @bot.message_handler(
     commands=["start"]
 )
 def start_command(message):
 
-    # حفظ المستخدم
     save_user(message)
 
-    # إزالة أي كيبورد قديم
-    remove_keyboard = types.ReplyKeyboardRemove(
-        remove_keyboard=True
-    )
-
-    # إرسال حالة الحصة مباشرة
     bot.send_message(
         message.chat.id,
         get_gas_status(),
-        parse_mode="Markdown",
-        reply_markup=remove_keyboard
+        parse_mode="Markdown"
     )
 
 
-# ==================================================
+# ==============================
 # /gas
-# ==================================================
+# ==============================
 
 @bot.message_handler(
     commands=["gas"]
@@ -270,16 +264,13 @@ def gas_command(message):
     bot.send_message(
         message.chat.id,
         get_gas_status(),
-        parse_mode="Markdown",
-        reply_markup=types.ReplyKeyboardRemove(
-            remove_keyboard=True
-        )
+        parse_mode="Markdown"
     )
 
 
-# ==================================================
+# ==============================
 # /next
-# ==================================================
+# ==============================
 
 @bot.message_handler(
     commands=["next"]
@@ -311,47 +302,18 @@ def next_command(message):
     ).days
 
     message_text = (
+
         "📅 *الحصة القادمة*\n\n"
-        f"🟢 بداية الحصة:\n"
+
+        f"🟢 البداية:\n"
         f"*{next_start.strftime('%Y-%m-%d')}*\n\n"
-        f"🏁 نهاية الحصة:\n"
+
+        f"🏁 النهاية:\n"
         f"*{next_end.strftime('%Y-%m-%d')}*\n\n"
+
         f"⏳ متبقي:\n"
         f"*{days_left} يوم*"
-        + COPYRIGHT
-    )
 
-    bot.send_message(
-        message.chat.id,
-        message_text,
-        parse_mode="Markdown",
-        reply_markup=types.ReplyKeyboardRemove(
-            remove_keyboard=True
-        )
-    )
-
-
-# ==================================================
-# /users
-# المدير فقط
-# ==================================================
-
-@bot.message_handler(
-    commands=["users"]
-)
-def users_command(message):
-
-    if message.chat.id != ADMIN_ID:
-        return
-
-    users = load_users()
-
-    count = len(users)
-
-    message_text = (
-        "📊 *إحصائيات البوت*\n\n"
-        f"👥 عدد المستخدمين:\n"
-        f"*{count}*"
         + COPYRIGHT
     )
 
@@ -362,22 +324,274 @@ def users_command(message):
     )
 
 
-# ==================================================
-# التذكير اليومي
-# ==================================================
+# ==============================
+# /users
+# ==============================
+
+@bot.message_handler(
+    commands=["users"]
+)
+def users_command(message):
+
+    if not is_admin(message):
+        return
+
+    users = load_users()
+
+    text = (
+        "📊 *إحصائيات المستخدمين*\n\n"
+        f"👥 عدد المستخدمين: *{len(users)}*"
+        + COPYRIGHT
+    )
+
+    bot.send_message(
+        message.chat.id,
+        text,
+        parse_mode="Markdown"
+    )
+
+
+# ==============================
+# /userlist
+# ==============================
+
+@bot.message_handler(
+    commands=["userlist"]
+)
+def userlist_command(message):
+
+    if not is_admin(message):
+        return
+
+    users = load_users()
+
+    if not users:
+
+        bot.send_message(
+            message.chat.id,
+            "👥 لا يوجد مستخدمين."
+        )
+
+        return
+
+    text = "👥 *قائمة المستخدمين*\n\n"
+
+    number = 1
+
+    for user_id, data in users.items():
+
+        username = data["username"]
+
+        name = data["name"]
+
+        text += (
+            f"{number}. "
+            f"{name}\n"
+            f"🆔 `{user_id}`\n"
+            f"👤 @{username}\n\n"
+        )
+
+        number += 1
+
+    text += COPYRIGHT
+
+    bot.send_message(
+        message.chat.id,
+        text,
+        parse_mode="Markdown"
+    )
+
+
+# ==============================
+# /delete ID
+# ==============================
+
+@bot.message_handler(
+    commands=["delete"]
+)
+def delete_command(message):
+
+    if not is_admin(message):
+        return
+
+    parts = message.text.split()
+
+    if len(parts) != 2:
+
+        bot.send_message(
+            message.chat.id,
+            "❌ الاستخدام الصحيح:\n\n"
+            "`/delete USER_ID`",
+            parse_mode="Markdown"
+        )
+
+        return
+
+    user_id = parts[1]
+
+    if delete_user(user_id):
+
+        bot.send_message(
+            message.chat.id,
+            f"✅ تم حذف المستخدم:\n`{user_id}`",
+            parse_mode="Markdown"
+        )
+
+    else:
+
+        bot.send_message(
+            message.chat.id,
+            "❌ المستخدم غير موجود."
+        )
+
+
+# ==============================
+# /broadcast رسالة
+# ==============================
+
+@bot.message_handler(
+    commands=["broadcast"]
+)
+def broadcast_command(message):
+
+    if not is_admin(message):
+        return
+
+    text = message.text[
+        len("/broadcast"):
+    ].strip()
+
+    if not text:
+
+        bot.send_message(
+            message.chat.id,
+            "❌ اكتب الرسالة بعد الأمر.\n\n"
+            "مثال:\n"
+            "`/broadcast مساء الخير للجميع`",
+            parse_mode="Markdown"
+        )
+
+        return
+
+    users = load_users()
+
+    sent = 0
+
+    failed = 0
+
+    for user_id in users:
+
+        try:
+
+            bot.send_message(
+                int(user_id),
+                text,
+                parse_mode="Markdown"
+            )
+
+            sent += 1
+
+            time.sleep(0.05)
+
+        except Exception as e:
+
+            failed += 1
+
+            print(
+                f"Broadcast error "
+                f"{user_id}: {e}"
+            )
+
+    bot.send_message(
+        message.chat.id,
+        "📢 *تم إرسال الرسالة*\n\n"
+        f"✅ تم الإرسال: *{sent}*\n"
+        f"❌ فشل: *{failed}*",
+        parse_mode="Markdown"
+    )
+
+
+# ==============================
+# /stats
+# ==============================
+
+@bot.message_handler(
+    commands=["stats"]
+)
+def stats_command(message):
+
+    if not is_admin(message):
+        return
+
+    users = load_users()
+
+    today = datetime.date.today()
+
+    start, end = get_current_batch()
+
+    bot.send_message(
+        message.chat.id,
+
+        "📊 *إحصائيات البوت*\n\n"
+
+        f"👥 المستخدمين: *{len(users)}*\n\n"
+
+        f"📅 اليوم:\n"
+        f"*{today}*\n\n"
+
+        f"🟢 بداية الحصة:\n"
+        f"*{start}*\n\n"
+
+        f"🏁 نهاية الحصة:\n"
+        f"*{end}*\n\n"
+
+        f"🔄 مدة الدورة: *{CYCLE_DAYS} أيام*"
+
+        + COPYRIGHT,
+
+        parse_mode="Markdown"
+    )
+
+
+# ==============================
+# الإشعار اليومي
+# ==============================
 
 def send_daily_reminder():
+
+    today = datetime.date.today()
+
+    start, end = get_current_batch()
+
+    # إرسال فقط في أول يوم من الحصة
+
+    if today != start:
+
+        print(
+            f"ℹ️ اليوم {today} "
+            f"ليس يوم بداية الحصة."
+        )
+
+        return
 
     users = load_users()
 
     print(
-        f"🌅 Sending reminder to "
-        f"{len(users)} users..."
+        f"🔔 إرسال إشعار بداية الحصة "
+        f"إلى {len(users)} مستخدم..."
     )
 
     text = (
-        "🌅 *التذكير اليومي*\n\n"
-        + get_gas_status()
+        "🔔 *تنبيه حصة البنزين*\n\n"
+
+        "🟢 *اليوم تبدأ حصة جديدة!*\n\n"
+
+        "⛽ يمكنك التفويل الآن.\n\n"
+
+        f"📅 من: *{start}*\n"
+        f"🏁 إلى: *{end}*"
+
+        + COPYRIGHT
     )
 
     for user_id in users:
@@ -395,14 +609,16 @@ def send_daily_reminder():
         except Exception as e:
 
             print(
-                f"❌ Error sending to "
+                f"❌ Reminder error "
                 f"{user_id}: {e}"
             )
 
 
-# ==================================================
-# التذكير الساعة 08:00
-# ==================================================
+# ==============================
+# Scheduler
+# ==============================
+
+# توقيت العراق = UTC+3
 
 schedule.every().day.at(
     "08:00"
@@ -410,10 +626,6 @@ schedule.every().day.at(
     send_daily_reminder
 )
 
-
-# ==================================================
-# تشغيل Scheduler
-# ==================================================
 
 def run_scheduler():
 
@@ -433,9 +645,9 @@ def run_scheduler():
         time.sleep(1)
 
 
-# ==================================================
+# ==============================
 # تشغيل البوت
-# ==================================================
+# ==============================
 
 if __name__ == "__main__":
 
@@ -457,7 +669,7 @@ if __name__ == "__main__":
     )
 
     print(
-        "📅 Start date:",
+        "📅 Base date:",
         BASE_START_DATE
     )
 
@@ -471,7 +683,6 @@ if __name__ == "__main__":
         "=============================="
     )
 
-    # تشغيل الجدولة
     scheduler_thread = threading.Thread(
         target=run_scheduler,
         daemon=True
@@ -484,14 +695,13 @@ if __name__ == "__main__":
     )
 
     print(
-        "✅ Bot is running..."
+        "🔔 Reminder: 08:00"
     )
 
     print(
         "=============================="
     )
 
-    # تشغيل البوت
     bot.infinity_polling(
         skip_pending=True
     )
