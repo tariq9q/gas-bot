@@ -7,7 +7,7 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # بيانات البوت
-BOT_TOKEN = "8835971524:AAGdzuuvcBWBlqdlHInoxTigAPdGYUOTa_TI"
+BOT_TOKEN = "8835971524:AAGdzuuvcBWBlqdHHnoxTigAPdGYUOTa_TI"
 CHAT_ID = "495109765"
 
 # جدول حصص البنزين لسنة 2026 في كركوك
