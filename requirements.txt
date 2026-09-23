@@ -1,4 +1,4 @@
-pyTelegramBotAPI
-requests
-urllib3
-beautifulsoup4
+pkill -9 -f bot.py
+cd gas-bot
+git pull origin main
+nohup python bot.py &
