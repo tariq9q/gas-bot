@@ -11,7 +11,7 @@ from telebot import types
 # إعدادات البوت
 # ==============================
 
-BOT_TOKEN = "8835971524:AAGdzuuvcBWBlqdHHnoxTigAPdGYUOTa_TI"
+BOT_TOKEN = "8835971524:AAFx5vV1tUeT1skCFCLtBcf-SjG3TL9dDBc"
 
 # ضع Chat ID مالك هنا
 ADMIN_ID = 495109765
