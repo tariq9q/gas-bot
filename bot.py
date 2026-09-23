@@ -1,13 +1,12 @@
 import datetime
 import telebot
 
-"BOT_TOKEN = "8835971524:AAFx5vV1tUeT1skCFCLtBcf-SjG3TL9dDBc""
+BOT_TOKEN = "8835971524:AAFx5vV1tUeT1skCFCLtBcf-SjG3TL9dDBc"
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# قائمة الوجبات المحدثة (تاريخ البداية وتاريخ النهاية)
+# التواريخ المحدثة للوجبة من 22 إلى 26 سبتمبر 2026
 PERIODS_2026 = [
     (datetime.date(2026, 9, 22), datetime.date(2026, 9, 26)),
-    # يمكنك إضافة وجبات أخرى هنا لاحقاً بنفس الصيغة
 ]
 
 
