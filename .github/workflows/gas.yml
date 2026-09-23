@@ -1,0 +1,26 @@
+name: Gas Bot Daily Reminder
+
+on:
+  schedule:
+    - cron: '0 5 * * *'  # يعمل يومياً الساعة 8 صباحاً بتوقيت العراق (5:00 UTC)
+  workflow_dispatch:      # يسمح لك بتشغيله يدوياً لتجربته الآن
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Bot
+        run: python bot.py
