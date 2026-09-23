@@ -12,13 +12,11 @@ CYCLE_DAYS = 5  # كل وجبة تستغرق 5 أيام
 def get_current_batch_info():
   today = datetime.date.today()
 
-  # إذا كان التاريخ قبل أول وجبة
   if today < BASE_START_DATE:
     return BASE_START_DATE, BASE_START_DATE + datetime.timedelta(
         days=CYCLE_DAYS - 1
     )
 
-  # حساب الفرق بالأيام لمعرفة الوجبة الحالية تلقائياً
   days_passed = (today - BASE_START_DATE).days
   batch_index = days_passed // CYCLE_DAYS
 
@@ -41,18 +39,19 @@ def get_gas_status():
   msg += f"🏁 *تاريخ نهاية الوجبة:* {end_date.strftime('%Y-%m-%d')}\n\n"
 
   if today == start_date:
-    msg += "🟢 *اليوم تبدأ وجبة جديدة! يمكنك التفويل.*"
+    msg += "🟢 *اليوم تبدأ وجبة جديدة! يمكنك التفويل.*\n\n"
   elif days_left == 0:
-    msg += "🔴 *اليوم هو آخر يوم في هذه الوجبة!*"
+    msg += "🔴 *اليوم هو آخر يوم في هذه الوجبة!*\n\n"
   elif today > end_date:
-    # احتياطاً لو حصل أي تأخير بالحساب
-    msg += "⏳ *انتهت هذه الوجبة، وتبدأ الوجبة الجديدة فوراً.*"
+    msg += "⏳ *انتهت هذه الوجبة، وتبدأ الوجبة الجديدة فوراً.*\n\n"
   else:
     msg += (
         f"⏳ متبقي *{days_left}* أيام لتنتهي هذه الوجبة (تنتهي يوم"
-        f" {end_date.strftime('%Y-%m-%d')})."
+        f" {end_date.strftime('%Y-%m-%d')}).\n\n"
     )
 
+  # إضافة التوقيع في النهاية بأحرف صغيرة
+  msg += "_by tariq nabeil_"
   return msg
 
 
