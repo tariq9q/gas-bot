@@ -1,7 +1,7 @@
 import datetime
 import telebot
 
-BOT_TOKEN = "8835971524:AAGdzuuvcBWBlqdlHInoxTigAPdGYUOTa_TI"
+"BOT_TOKEN = "8835971524:AAFx5vV1tUeT1skCFCLtBcf-SjG3TL9dDBc""
 bot = telebot.TeleBot(BOT_TOKEN)
 
 # قائمة الوجبات المحدثة (تاريخ البداية وتاريخ النهاية)
