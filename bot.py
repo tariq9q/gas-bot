@@ -1,77 +1,68 @@
 import datetime
+import re
+import bs4
+import requests
 import telebot
 
-BOT_TOKEN = "8835971524:AAGdzuuvcBWBlqdHHnoxTigAPdGYUOTa_TI"
+BOT_TOKEN = "8835971524:AAGdzuuvcBWBlqdlHInoxTigAPdGYUOTa_TI"
 bot = telebot.TeleBot(BOT_TOKEN)
 
-PERIODS_2026 = [
-    (datetime.date(2026, 1, 1), datetime.date(2026, 1, 2)),
-    (datetime.date(2026, 1, 3), datetime.date(2026, 1, 7)),
-    (datetime.date(2026, 1, 8), datetime.date(2026, 1, 12)),
-    (datetime.date(2026, 1, 13), datetime.date(2026, 1, 17)),
-    (datetime.date(2026, 1, 18), datetime.date(2026, 1, 22)),
-    (datetime.date(2026, 1, 23), datetime.date(2026, 1, 27)),
-    (datetime.date(2026, 1, 28), datetime.date(2026, 1, 31)),
-    (datetime.date(2026, 2, 1), datetime.date(2026, 2, 5)),
-    (datetime.date(2026, 2, 6), datetime.date(2026, 2, 10)),
-    (datetime.date(2026, 2, 11), datetime.date(2026, 2, 15)),
-    (datetime.date(2026, 2, 16), datetime.date(2026, 2, 20)),
-    (datetime.date(2026, 2, 21), datetime.date(2026, 2, 25)),
-    (datetime.date(2026, 2, 26), datetime.date(2026, 2, 28)),
-    (datetime.date(2026, 3, 1), datetime.date(2026, 3, 5)),
-    (datetime.date(2026, 3, 6), datetime.date(2026, 3, 10)),
-    (datetime.date(2026, 3, 11), datetime.date(2026, 3, 15)),
-    (datetime.date(2026, 3, 16), datetime.date(2026, 3, 20)),
-    (datetime.date(2026, 3, 21), datetime.date(2026, 3, 25)),
-    (datetime.date(2026, 3, 26), datetime.date(2026, 3, 31)),
-    (datetime.date(2026, 4, 1), datetime.date(2026, 4, 3)),
-    (datetime.date(2026, 4, 4), datetime.date(2026, 4, 10)),
-    (datetime.date(2026, 4, 11), datetime.date(2026, 4, 17)),
-    (datetime.date(2026, 4, 18), datetime.date(2026, 4, 24)),
-    (datetime.date(2026, 4, 25), datetime.date(2026, 4, 30)),
-    (datetime.date(2026, 9, 1), datetime.date(2026, 9, 4)),
-    (datetime.date(2026, 9, 5), datetime.date(2026, 9, 11)),
-    (datetime.date(2026, 9, 12), datetime.date(2026, 9, 18)),
-    (datetime.date(2026, 9, 19), datetime.date(2026, 9, 25)),
-    (datetime.date(2026, 9, 26), datetime.date(2026, 9, 30)),
-]
+
+def fetch_gas_info_from_web():
+  url = "https://siartna.com/%D8%AD%D8%B5%D8%A9-%D8%A8%D8%A7%D9%86%D8%B2%D9%8A%D9%86/?srsltid=AU7gw4USVzOELAOP45djD5FBFFO5aIWoNthYDTUJYI8ORileiic0EpEs"
+  headers = {
+      "User-Agent": (
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+      )
+  }
+
+  try:
+    response = requests.get(url, headers=headers, timeout=10)
+    if response.status_code == 200:
+      soup = bs4.BeautifulSoup(response.text, "html.parser")
+      # البحث عن النصوص المتعلقة بحصة كركوك
+      text_content = soup.get_text()
+
+      # استخراج السطور الخاصة بكركوك أو الوجبة الحالية
+      lines = [
+          line.strip()
+          for line in text_content.split("\n")
+          if "كركوك" in line or "الوجبة" in line or "البنزين" in line
+      ]
+      clean_info = "\n".join(lines[:5])  # أخذ أول بضعة سطور رئيسية
+
+      if clean_info:
+        return clean_info
+
+    return None
+  except Exception as e:
+    print(f"Error fetching data: {e}")
+    return None
 
 
 def get_gas_status():
-  today = datetime.date.today()
-  current_period = None
+  today = datetime.date.today().strftime("%Y-%m-%d")
+  web_data = fetch_gas_info_from_web()
 
-  for start_date, end_date in PERIODS_2026:
-    if start_date <= today <= end_date:
-      current_period = (start_date, end_date)
-      break
+  msg = f"⛽ *تذكير حصة البنزين - كركوك*\n\n"
+  msg += f"📅 *تاريخ اليوم:* {today}\n\n"
 
-  if current_period:
-    start_date, end_date = current_period
-    days_left = (end_date - today).days
-
-    msg = f"⛽ *تذكير حصة البنزين - كركوك*\n\n"
-    msg += f"📅 *التاريخ اليوم:* {today.strftime('%Y-%m-%d')}\n"
-    msg += f"🚀 *تاريخ بداية الوجبة:* {start_date.strftime('%Y-%m-%d')}\n"
-    msg += f"🏁 *تاريخ نهاية الوجبة:* {end_date.strftime('%Y-%m-%d')}\n\n"
-
-    if today == start_date:
-      msg += "🟢 *اليوم تبدأ وجبة جديدة! يمكنك التفويل.*"
-    elif days_left == 0:
-      msg += "🔴 *اليوم هو آخر يوم في هذه الوجبة!*"
-    else:
-      msg += f"⏳ متبقي *{days_left}* أيام لتنتهي هذه الوجبة."
+  if web_data:
+    msg += f"📢 *آخر التحديثات المعلنة:*\n{web_data}\n\n"
+    msg += "🌐 *المصدر:* موقع سيارتنا"
   else:
-    msg = f"ℹ️ لا توجد بيانات مسجلة لليوم ({today.strftime('%Y-%m-%d')})."
+    msg += (
+        "⚠️ تعذر جلب البيانات المباشرة من الموقع حالياً. يرجى المتابعة لاحقاً."
+    )
 
   return msg
 
 
-@bot.message_handler(commands=['start', 'help'])
+@bot.message_handler(commands=["start", "help"])
 def send_welcome(message):
   status_msg = get_gas_status()
-  bot.reply_to(message, status_msg, parse_mode='Markdown')
+  bot.reply_to(message, status_msg, parse_mode="Markdown")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
   bot.infinity_polling()
