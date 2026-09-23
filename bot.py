@@ -395,6 +395,7 @@ if __name__ == "__main__":
 
     print("✅ Scheduler started")
     print("✅ Bot is running")
+    message += "\n\n_© By Tariq Nabeel_"
 
     bot.infinity_polling(
         skip_pending=True
