@@ -1,16 +1,9 @@
-
 import datetime
-import requests
-import urllib3
+import telebot
 
-# إخفاء تحذيرات شهادة الأمان
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-# بيانات البوت
 BOT_TOKEN = "8835971524:AAGdzuuvcBWBlqdHHnoxTigAPdGYUOTa_TI"
-CHAT_ID = "495109765"
+bot = telebot.TeleBot(BOT_TOKEN)
 
-# جدول حصص البنزين لسنة 2026 في كركوك
 PERIODS_2026 = [
     (datetime.date(2026, 1, 1), datetime.date(2026, 1, 2)),
     (datetime.date(2026, 1, 3), datetime.date(2026, 1, 7)),
@@ -44,7 +37,7 @@ PERIODS_2026 = [
 ]
 
 
-def send_gas_notification():
+def get_gas_status():
   today = datetime.date.today()
   current_period = None
 
@@ -71,16 +64,14 @@ def send_gas_notification():
   else:
     msg = f"ℹ️ لا توجد بيانات مسجلة لليوم ({today.strftime('%Y-%m-%d')})."
 
-  url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-  payload = {"chat_id": CHAT_ID, "text": msg, "parse_mode": "Markdown"}
-
-  try:
-    res = requests.post(url, data=payload, timeout=15)
-    print("Status Code:", res.status_code)
-    print("Response:", res.text)
-  except Exception as e:
-    print("حدث خطأ أثناء الإرسال:", e)
+  return msg
 
 
-if __name__ == "__main__":
-  send_gas_notification()
+@bot.message_handler(commands=['start', 'help'])
+def send_welcome(message):
+  status_msg = get_gas_status()
+  bot.reply_to(message, status_msg, parse_mode='Markdown')
+
+
+if __name__ == '__main__':
+  bot.infinity_polling()
