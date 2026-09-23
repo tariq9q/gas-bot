@@ -1,18 +1,39 @@
 import datetime
-import time
-import threading
-import telebot
+import os
 import schedule
+import telebot
+import threading
+import time
 
 BOT_TOKEN = "8835971524:AAFx5vV1tUeT1skCFCLtBcf-SjG3TL9dDBc"
 bot = telebot.TeleBot(BOT_TOKEN)
 
 BASE_START_DATE = datetime.date(2026, 9, 22)
 CYCLE_DAYS = 5
+USERS_FILE = "users.txt"
 
-# حفظ معرفات المستخدمين الذين تفاعلوا مع البوت لكي يرسل لهم التذكير الصباحي
-# (ملاحظة: إذا أعد تشغيل السيرفر، ستحتاج لإرسال /start مرة أخرى لتسجيل المستخدمين)
-known_users = set()
+
+# دالة لحفظ المستخدم الجديد في ملف
+def save_user(user_id, username, full_name):
+  users = load_users()
+  if user_id not in users:
+    with open(USERS_FILE, "a", encoding="utf-8") as f:
+      f.write(f"{user_id},{username},{full_name}\n")
+
+
+# دالة لقراءة المستخدمين المسجلين
+def load_users():
+  users = {}
+  if os.path.exists(USERS_FILE):
+    with open(USERS_FILE, "r", encoding="utf-8") as f:
+      for line in f:
+        parts = line.strip().split(",")
+        if len(parts) >= 1:
+          users[parts[0]] = {
+              "username": parts[1] if len(parts) >  1 else "N/A",
+              "name": parts[2] if len(parts) > 2 else "N/A",
+          }
+  return users
 
 
 def get_current_batch_info():
@@ -58,25 +79,38 @@ def get_gas_status():
   return msg
 
 
-@bot.message_handler(commands=['start', 'help'])
+@bot.message_handler(commands=["start", "help"])
 def send_welcome(message):
-  known_users.add(message.chat.id)
+  user_id = str(message.chat.id)
+  username = message.from_user.username or "N/A"
+  full_name = message.from_user.first_name or "N/A"
+
+  # حفظ المستخدم في الملف
+  save_user(user_id, username, full_name)
+
   status_msg = get_gas_status()
-  bot.reply_to(message, status_msg, parse_mode='Markdown')
+  bot.reply_to(message, status_msg, parse_mode="Markdown")
 
 
-# دالة الإرسال التذكيري الصباحي لكل المستخدمين المسجلين
+# أمر خاص لك أنت وحدك لمعرفة عدد المستخدمين (مثلاً إذا أرسلت /stats)
+@bot.message_handler(commands=["stats"])
+def show_stats(message):
+  users = load_users()
+  count = len(users)
+  bot.reply_to(message, f"📊 عدد المستخدمين الذين تفاعلوا مع البوت: {count}")
+
+
 def send_daily_reminder():
+  users = load_users()
   status_msg = f"🌅 *التذكير الصباحي للحصة*\n\n" + get_gas_status()
-  for user_id in known_users:
+  for user_id in users:
     try:
-      bot.send_message(user_id, status_msg, parse_mode='Markdown')
+      bot.send_message(user_id, status_msg, parse_mode="Markdown")
     except Exception as e:
-      print(f'Error sending to {user_id}: {e}')
+      print(f"Error sending to {user_id}: {e}")
 
 
-# جدولدها لتعمل كل يوم الساعة 8:00 صباحاً
-schedule.every().day.at('08:00').do(send_daily_reminder)
+schedule.every().day.at("08:00").do(send_daily_reminder)
 
 
 def run_scheduler():
@@ -85,11 +119,8 @@ def run_scheduler():
     time.sleep(1)
 
 
-if __name__ == '__main__':
-  # تشغيل الجدولة في خلفية البوت
+if __name__ == "__main__":
   t = threading.Thread(target=run_scheduler)
   t.daemon = True
   t.start()
-
-  # تشغيل البوت باستمرار
   bot.infinity_polling()
