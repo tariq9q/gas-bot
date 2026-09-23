@@ -4,6 +4,7 @@ import schedule
 import telebot
 import threading
 import time
+from telebot import types
 
 
 # ==================================================
@@ -149,7 +150,6 @@ def get_current_batch():
 
     today = datetime.date.today()
 
-    # إذا اليوم قبل بداية النظام
     if today < BASE_START_DATE:
 
         start = BASE_START_DATE
@@ -182,7 +182,7 @@ def get_current_batch():
 
 
 # ==================================================
-# رسالة حالة الحصة
+# حالة الحصة
 # ==================================================
 
 def get_gas_status():
@@ -205,7 +205,6 @@ def get_gas_status():
         f"*{end.strftime('%Y-%m-%d')}*\n\n"
     )
 
-    # أول يوم
     if today == start:
 
         message += (
@@ -213,14 +212,12 @@ def get_gas_status():
             "⛽ يمكنك التفويل."
         )
 
-    # آخر يوم
     elif today == end:
 
         message += (
             "🔴 *اليوم آخر يوم من الحصة!*"
         )
 
-    # الأيام الوسطية
     else:
 
         message += (
@@ -228,7 +225,6 @@ def get_gas_status():
             "لانتهاء الحصة."
         )
 
-    # الحقوق
     message += COPYRIGHT
 
     return message
@@ -246,11 +242,17 @@ def start_command(message):
     # حفظ المستخدم
     save_user(message)
 
+    # إزالة أي كيبورد قديم
+    remove_keyboard = types.ReplyKeyboardRemove(
+        remove_keyboard=True
+    )
+
     # إرسال حالة الحصة مباشرة
     bot.send_message(
         message.chat.id,
         get_gas_status(),
-        parse_mode="Markdown"
+        parse_mode="Markdown",
+        reply_markup=remove_keyboard
     )
 
 
@@ -268,7 +270,10 @@ def gas_command(message):
     bot.send_message(
         message.chat.id,
         get_gas_status(),
-        parse_mode="Markdown"
+        parse_mode="Markdown",
+        reply_markup=types.ReplyKeyboardRemove(
+            remove_keyboard=True
+        )
     )
 
 
@@ -289,15 +294,11 @@ def next_command(message):
         get_current_batch()
     )
 
-    # بداية الحصة القادمة
     next_start = (
         current_end
-        + datetime.timedelta(
-            days=1
-        )
+        + datetime.timedelta(days=1)
     )
 
-    # نهاية الحصة القادمة
     next_end = (
         next_start
         + datetime.timedelta(
@@ -323,7 +324,10 @@ def next_command(message):
     bot.send_message(
         message.chat.id,
         message_text,
-        parse_mode="Markdown"
+        parse_mode="Markdown",
+        reply_markup=types.ReplyKeyboardRemove(
+            remove_keyboard=True
+        )
     )
 
 
@@ -337,9 +341,7 @@ def next_command(message):
 )
 def users_command(message):
 
-    # منع أي شخص غير المدير
     if message.chat.id != ADMIN_ID:
-
         return
 
     users = load_users()
@@ -388,7 +390,6 @@ def send_daily_reminder():
                 parse_mode="Markdown"
             )
 
-            # تأخير بسيط بين الرسائل
             time.sleep(0.05)
 
         except Exception as e:
@@ -400,7 +401,7 @@ def send_daily_reminder():
 
 
 # ==================================================
-# جدولة التذكير الساعة 08:00
+# التذكير الساعة 08:00
 # ==================================================
 
 schedule.every().day.at(
@@ -470,7 +471,7 @@ if __name__ == "__main__":
         "=============================="
     )
 
-    # تشغيل Scheduler
+    # تشغيل الجدولة
     scheduler_thread = threading.Thread(
         target=run_scheduler,
         daemon=True
@@ -490,7 +491,7 @@ if __name__ == "__main__":
         "=============================="
     )
 
-    # تشغيل Telegram Bot
+    # تشغيل البوت
     bot.infinity_polling(
         skip_pending=True
     )
