@@ -16,7 +16,7 @@ USERS_FILE = "users.txt"
 # دالة لحفظ المستخدم الجديد في ملف
 def save_user(user_id, username, full_name):
   users = load_users()
-  if user_id not in users:
+  if str(user_id) not in users:
     with open(USERS_FILE, "a", encoding="utf-8") as f:
       f.write(f"{user_id},{username},{full_name}\n")
 
@@ -30,7 +30,7 @@ def load_users():
         parts = line.strip().split(",")
         if len(parts) >= 1:
           users[parts[0]] = {
-              "username": parts[1] if len(parts) >  1 else "N/A",
+              "username": parts[1] if len(parts) > 1 else "N/A",
               "name": parts[2] if len(parts) > 2 else "N/A",
           }
   return users
@@ -92,7 +92,7 @@ def send_welcome(message):
   bot.reply_to(message, status_msg, parse_mode="Markdown")
 
 
-# أمر خاص لك أنت وحدك لمعرفة عدد المستخدمين (مثلاً إذا أرسلت /stats)
+# أمر لمعرفة عدد المستخدمين
 @bot.message_handler(commands=["stats"])
 def show_stats(message):
   users = load_users()
