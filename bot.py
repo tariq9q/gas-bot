@@ -5,7 +5,7 @@ import telebot
 import threading
 import time
 
-BOT_TOKEN = "8835971524:AAHn8bSWoIPzwCLGrPXdSnKj_hdRXk1G068"
+BOT_TOKEN = "8835971524:AAFr_Pyh9XyzTYKEnfd1H17C1tljOhflDgk"
 bot = telebot.TeleBot(BOT_TOKEN)
 
 BASE_START_DATE = datetime.date(2026, 9, 22)
